@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pato Tale - Movimiento en Camino</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            image-rendering: pixelated;
+        }
+        
+        body {
+            background-color: #000;
+            font-family: 'Press Start 2P', cursive, monospace;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+            background-image: 
+                radial-gradient(circle at center, #1a1a2e 0%, #16213e 40%, #0f3460 100%);
+        }
+        
+        .game-container {
+            position: relative;
+            width: 800px;
+            height: 600px;
+            border: 4px solid #ffd700;
+            box-shadow: 0 0 20px #ffd700;
+            overflow: hidden;
+        }
+        
+        .game-scene {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(ellipse at center, #2b5876 0%, #4e4376 100%);
+        }
+        
+        .path {
+            position: absolute;
+            width: 600px;
+            height: 80px;
+            background: 
+                repeating-linear-gradient(
+                    90deg,
+                    #8b4513,
+                    #8b4513 10px,
+                    #6b3106 10px,
+                    #6b3106 20px
+                );
+            top: 260px;
+            left: 100px;
+            border: 4px solid #6b3106;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            animation: pathScroll 10s infinite linear;
+        }
+        
+        .path-boundaries {
+            position: absolute;
+            width: 600px;
+            height: 80px;
+            top: 260px;
+            left: 100px;
+            pointer-events: none;
+        }
+        
+        .boundary {
+            position: absolute;
+            background: rgba(255, 0, 0, 0.2);
+            display: none; /* Solo para debug, luego ocultar */
+        }
+        
+        .boundary-top {
+            top: -10px;
+            left: 0;
+            width: 100%;
+            height: 10px;
+        }
+        
+        .boundary-bottom {
+            bottom: -10px;
+            left: 0;
+            width: 100%;
+            height: 10px;
+        }
+        
+        .boundary-left {
+            top: 0;
+            left: -10px;
+            width: 10px;
+            height: 100%;
+        }
+        
+        .boundary-right {
+            top: 0;
+            right: -10px;
+            width: 10px;
+            height: 100%;
+        }
+        
+        @keyframes pathScroll {
+            0% { background-position: 0 0; }
+            100% { background-position: 40px 0; }
+        }
+        
+        .duck {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            background: 
+                linear-gradient(45deg, #ffd700 0%, #ffcc00 100%);
+            border-radius: 50% 40% 40% 50%;
+            top: 250px;
+            left: 120px;
+            z-index: 10;
+            transition: transform 0.1s ease-out;
+            animation: duckFloat 3s infinite ease-in-out;
+        }
+        
+        @keyframes duckFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+        
+        .duck.walking {
+            animation: duckWalk 0.4s infinite steps(2);
+        }
+        
+        @keyframes duckWalk {
+            0%, 100% { transform: translateY(0) rotate(-2deg); }
+            50% { transform: translateY(-3px) rotate(2deg); }
+        }
+        
+        .duck::before {
+            content: "";
+            position: absolute;
+            width: 15px;
+            height: 15px;
+            background: #ff9500;
+            border-radius: 50%;
+            top: 10px;
+            right: -5px;
+        }
+        
+        .duck::after {
+            content: "";
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: #000;
+            border-radius: 50%;
+            top: 12px;
+            right: 0;
+        }
+        
+        .duck .wing {
+            position: absolute;
+            width: 15px;
+            height: 20px;
+            background: 
+                linear-gradient(45deg, #ffcc00 0%, #e6b800 100%);
+            border-radius: 50% 40% 40% 50%;
+            top: 10px;
+            left: 5px;
+            transform-origin: bottom right;
+            animation: duckWing 1.5s infinite ease-in-out;
+        }
+        
+        @keyframes duckWing {
+            0%, 100% { transform: rotate(-5deg); }
+            50% { transform: rotate(5deg); }
+        }
+        
+        .chest {
+            position: absolute;
+            width: 50px;
+            height: 40px;
+            background: 
+                linear-gradient(to bottom, #cd7f32 0%, #8b4513 100%);
+            top: 260px;
+            left: 690px;
+            border: 4px solid #6b3106;
+            z-index: 5;
+            animation: chestGlow 4s infinite alternate;
+        }
+        
+        @keyframes chestGlow {
+            0% { box-shadow: 0 0 5px #cd7f32; }
+            100% { box-shadow: 0 0 15px #ffd700; }
+        }
+        
+        .chest::before {
+            content: "";
+            position: absolute;
+            width: 50px;
+            height: 15px;
+            background: 
+                linear-gradient(to bottom, #e6b04d 0%, #cd7f32 100%);
+            top: -15px;
+            left: 0;
+            border: 4px solid #6b3106;
+            border-bottom: none;
+        }
+        
+        .chest::after {
+            content: "=";
+            position: absolute;
+            color: #6b3106;
+            font-size: 20px;
+            top: -10px;
+            left: 15px;
+        }
+        
+        .flower {
+            position: absolute;
+            width: 30px;
+            height: 40px;
+            background: 
+                linear-gradient(to bottom, #228B22 0%, #006400 100%);
+            top: 240px;
+            z-index: 4;
+            border-radius: 0 0 5px 5px;
+            animation: flowerSway 4s infinite ease-in-out;
+        }
+        
+        @keyframes flowerSway {
+            0%, 100% { transform: rotate(-2deg); }
+            50% { transform: rotate(2deg); }
+        }
+        
+        .flower::before {
+            content: "";
+            position: absolute;
+            width: 25px;
+            height: 25px;
+            background: 
+                radial-gradient(circle at center, #ffd700 0%, #ffcc00 100%);
+            border-radius: 50%;
+            top: -20px;
+            left: 2px;
+            box-shadow: 0 0 8px #ffd700;
+            animation: flowerPulse 3s infinite alternate;
+        }
+        
+        @keyframes flowerPulse {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.1); }
+        }
+        
+        .message {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border: 4px solid #ffd700;
+            text-align: center;
+            width: 90%;
+            display: none;
+            z-index: 100;
+            box-shadow: 0 0 15px #ffd700;
+            animation: messagePulse 1.5s infinite alternate;
+        }
+        
+        @keyframes messagePulse {
+            0% { transform: translateX(-50%) scale(1); }
+            100% { transform: translateX(-50%) scale(1.03); }
+        }
+        
+        .message p {
+            margin: 10px 0;
+            font-size: 16px;
+            color: #ffd700;
+            text-shadow: 2px 2px 0 #000;
+        }
+        
+        .title {
+            position: absolute;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 32px;
+            color: #ffd700;
+            text-shadow: 3px 3px 0 #ff9500, 6px 6px 0 #000;
+            z-index: 20;
+            text-align: center;
+            animation: glow 2s infinite alternate, float 4s infinite ease-in-out;
+        }
+        
+        @keyframes float {
+            0%, 100% { top: 30px; }
+            50% { top: 35px; }
+        }
+        
+        .instructions {
+            position: absolute;
+            top: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 14px;
+            color: #fff;
+            text-align: center;
+            z-index: 20;
+            background-color: rgba(0, 0, 0, 0.6);
+            padding: 10px;
+            border: 2px solid #ffd700;
+            animation: instructionsFade 8s infinite;
+        }
+        
+        @keyframes instructionsFade {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .stars {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        
+        .star {
+            position: absolute;
+            background-color: white;
+            border-radius: 50%;
+            animation: twinkle 3s infinite alternate;
+        }
+        
+        @keyframes twinkle {
+            0% { opacity: 0.3; transform: scale(1); }
+            100% { opacity: 1; transform: scale(1.2); }
+        }
+        
+        @keyframes glow {
+            0% { text-shadow: 3px 3px 0 #ff9500, 6px 6px 0 #000; }
+            100% { text-shadow: 3px 3px 0 #ff5500, 6px 6px 0 #000, 0 0 15px #ffd700; }
+        }
+        
+        .hearts {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            display: flex;
+            gap: 10px;
+            animation: heartsPulse 2s infinite;
+        }
+        
+        @keyframes heartsPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        .heart {
+            width: 20px;
+            height: 20px;
+            background-color: #ff5252;
+            transform: rotate(45deg);
+            position: relative;
+            animation: heartBeat 1.5s infinite;
+        }
+        
+        .heart:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        
+        .heart:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        
+        @keyframes heartBeat {
+            0%, 100% { transform: rotate(45deg) scale(1); }
+            50% { transform: rotate(45deg) scale(1.1); }
+        }
+        
+        .heart::before,
+        .heart::after {
+            content: "";
+            width: 20px;
+            height: 20px;
+            background-color: #ff5252;
+            border-radius: 50%;
+            position: absolute;
+        }
+        
+        .heart::before {
+            top: -10px;
+            left: 0;
+        }
+        
+        .heart::after {
+            top: 0;
+            left: -10px;
+        }
+        
+        .dialog-box {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            background-color: rgba(0, 0, 0, 0.9);
+            border: 4px solid #fff;
+            padding: 15px;
+            color: white;
+            font-size: 16px;
+            display: none;
+            z-index: 90;
+            text-align: left;
+            animation: dialogSlide 0.5s ease-out;
+        }
+        
+        @keyframes dialogSlide {
+            from { bottom: -100px; opacity: 0; }
+            to { bottom: 30px; opacity: 1; }
+        }
+        
+        .dialog-box::before {
+            content: "*";
+            margin-right: 10px;
+            color: #ffd700;
+        }
+        
+        .particles {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 5;
+        }
+        
+        .particle {
+            position: absolute;
+            background-color: #ffd700;
+            border-radius: 50%;
+            pointer-events: none;
+            opacity: 0;
+        }
+        
+        @keyframes particleFloat {
+            0% {
+                transform: translate(0, 0);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(var(--tx), var(--ty));
+                opacity: 0;
+            }
+        }
+        
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 20px;
+            opacity: 0;
+            z-index: 100;
+        }
+        
+        @keyframes confettiFall {
+            0% {
+                transform: translateY(-100px) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(600px) rotate(360deg);
+                opacity: 0;
+            }
+        }
+        
+        .movement-hint {
+            position: absolute;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 12px;
+            color: #ffd700;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 8px;
+            border-radius: 5px;
+            display: none;
+            animation: hintPulse 2s infinite;
+        }
+        
+        @keyframes hintPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-scene">
+            <div class="stars" id="stars"></div>
+            <div class="particles" id="particles"></div>
+            <h1 class="title">PATOTALE</h1>
+            <div class="instructions">Usa WASD para mover al pato hacia el cofre</div>
+            
+            <div class="hearts">
+                <div class="heart"></div>
+                <div class="heart"></div>
+                <div class="heart"></div>
+            </div>
+            
+            <div class="path"></div>
+            <div class="path-boundaries">
+                <div class="boundary boundary-top"></div>
+                <div class="boundary boundary-bottom"></div>
+                <div class="boundary boundary-left"></div>
+                <div class="boundary boundary-right"></div>
+            </div>
+            <div class="duck" id="duck">
+                <div class="wing"></div>
+            </div>
+            <div class="chest" id="chest"></div>
+            
+            <div class="dialog-box" id="dialog">
+                Has encontrado el cofre del pato legendario.
+            </div>
+            
+            <div class="message" id="message">
+                <p>¡Felicidades! Has llegado al cofre.</p>
+                <p>Presiona ESPACIO para descubrir el tesoro</p>
+            </div>
+            
+            <div class="movement-hint" id="movementHint">
+                ¡No puedes salir del camino!
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const duck = document.getElementById('duck');
+            const chest = document.getElementById('chest');
+            const message = document.getElementById('message');
+            const dialog = document.getElementById('dialog');
+            const movementHint = document.getElementById('movementHint');
+            const starsContainer = document.getElementById('stars');
+            const particlesContainer = document.getElementById('particles');
+            const gameContainer = document.querySelector('.game-container');
+            
+            // Definir los límites del camino (coordenadas relativas al contenedor del juego)
+            const pathBounds = {
+                left: 100,   // posición X inicial del camino
+                right: 700,  // posición X final del camino (100 + 600 de ancho)
+                top: 260,    // posición Y superior del camino
+                bottom: 340  // posición Y inferior del camino (260 + 80 de alto)
+            };
+            
+            // Variables de posición del pato
+            let duckX = 120;
+            let duckY = 250;
+            let reachedChest = false;
+            const step = 10;
+            let isMoving = false;
+            
+            // Crear estrellas de fondo
+            for (let i = 0; i < 100; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.style.width = Math.random() * 3 + 1 + 'px';
+                star.style.height = star.style.width;
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 100 + '%';
+                star.style.animationDelay = Math.random() * 5 + 's';
+                starsContainer.appendChild(star);
+            }
+            
+            // Crear flores en el camino
+            for (let i = 0; i < 15; i++) {
+                const flower = document.createElement('div');
+                flower.className = 'flower';
+                flower.style.left = (120 + i * 40) + 'px';
+                
+                // Variar ligeramente la altura y animación de las flores
+                const heightVariation = Math.random() * 20 - 10;
+                flower.style.top = (240 + heightVariation) + 'px';
+                flower.style.animationDelay = (Math.random() * 2) + 's';
+                
+                gameContainer.appendChild(flower);
+            }
+            
+            // Mostrar diálogo inicial
+            setTimeout(() => {
+                dialog.style.display = 'block';
+                dialog.textContent = "* Eres un pato en una misión (presiona cualquier tecla)";
+            }, 1000);
+            
+            // Función para verificar si el pato está dentro del camino
+            function isWithinPath(x, y) {
+                // Verificar límites horizontales (X)
+                const withinX = x >= pathBounds.left && x <= pathBounds.right - 40;
+                // Verificar límites verticales (Y)
+                const withinY = y >= pathBounds.top - 10 && y <= pathBounds.bottom - 30;
+                
+                return withinX && withinY;
+            }
+            
+            // Mostrar mensaje de límite
+            function showBoundaryHint() {
+                movementHint.style.display = 'block';
+                setTimeout(() => {
+                    movementHint.style.display = 'none';
+                }, 2000);
+            }
+            
+            document.addEventListener('keydown', function(event) {
+                // Ocultar diálogo después de la primera tecla
+                if (dialog.style.display === 'block') {
+                    dialog.style.display = 'none';
+                }
+                
+                if (reachedChest && event.code === 'Space') {
+                    window.open('https://es.wikipedia.org/wiki/Pato', '_blank');
+                    return;
+                }
+                
+                if (reachedChest) return;
+                
+                let moved = false;
+                let newX = duckX;
+                let newY = duckY;
+                
+                switch(event.key.toLowerCase()) {
+                    case 'w':
+                        newY = Math.max(50, duckY - step);
+                        break;
+                    case 's':
+                        newY = Math.min(500, duckY + step);
+                        break;
+                    case 'a':
+                        newX = Math.max(50, duckX - step);
+                        duck.style.transform = 'scaleX(-1)';
+                        break;
+                    case 'd':
+                        newX = Math.min(710, duckX + step);
+                        duck.style.transform = 'scaleX(1)';
+                        break;
+                    default:
+                        return; // No es una tecla de movimiento
+                }
+                
+                // Verificar si la nueva posición está dentro del camino
+                if (isWithinPath(newX, newY)) {
+                    duckX = newX;
+                    duckY = newY;
+                    moved = true;
+                } else {
+                    // Mostrar mensaje de que no puede salir del camino
+                    showBoundaryHint();
+                }
+                
+                if (moved) {
+                    // Añadir animación de caminar
+                    if (!isMoving) {
+                        duck.classList.add('walking');
+                        isMoving = true;
+                    }
+                    
+                    duck.style.left = duckX + 'px';
+                    duck.style.top = duckY + 'px';
+                    
+                    // Verificar si llegó al cofre
+                    checkChestReached();
+                    
+                    // Quitar animación de caminar después de un tiempo
+                    clearTimeout(window.walkingTimeout);
+                    window.walkingTimeout = setTimeout(() => {
+                        duck.classList.remove('walking');
+                        isMoving = false;
+                    }, 300);
+                }
+            });
+            
+            function checkChestReached() {
+                const duckRect = duck.getBoundingClientRect();
+                const chestRect = chest.getBoundingClientRect();
+                
+                // Detectar colisión
+                if (!(duckRect.right < chestRect.left || 
+                      duckRect.left > chestRect.right || 
+                      duckRect.bottom < chestRect.top || 
+                      duckRect.top > chestRect.bottom)) {
+                    reachedChest = true;
+                    message.style.display = 'block';
+                    duck.classList.remove('walking');
+                    isMoving = false;
+                    
+                    // Mostrar mensaje de celebración
+                    setTimeout(() => {
+                        dialog.style.display = 'block';
+                        dialog.textContent = "* El cofre contiene el conocimiento patológico universal";
+                    }, 1000);
+                }
+            }
+        });
+    </script>
+</body>
+</html>
